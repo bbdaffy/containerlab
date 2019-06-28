@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ include "bggappv2.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "bggappv2.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: bgg-app-port
+      name: bgg-app-svc-port
+  selector:
+    app.kubernetes.io/name: {{ include "bggappv2.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

@@ -1,0 +1,69 @@
+---
+# Persistent Storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+   name: {{ .Values.claimname }}
+   namespace: {{ .Release.Namespace }}
+   annotations: 
+      volume.beta.kubernetes.io/storage-provisioner: {{ .Values.storageprovisioner | quote }}
+      "helm.sh/hook": "pre-install"
+      "helm.sh/hook-weight": "0"
+      "helm.sh/hook-delete-policy": hook-succeeded
+
+spec:
+  accessModes:
+    - {{ .Values.accessmodes }}
+  resources:
+    requests:
+      storage: {{ .Values.storagesize }}
+  storageClassName: {{ .Values.storageclass }}
+
+---
+# Deployment for database
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+   name: {{ include "bggdbchart.fullname" . }}
+   namespace: {{ .Release.Namespace }}
+   annotations:
+     "helm.sh/hook": "pre-install"
+     "helm.sh/hook-weight": "1"
+     "helm.sh/hook-delete-policy": hook-succeeded
+
+spec:
+   replicas: {{ .Values.replicaCount }}
+   selector:
+      matchLabels:
+        app.kubernetes.io/name: {{ include "bggdbchart.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+   template:
+      metadata:
+        name: {{ include "bggdbchart.name" . }}
+        labels:
+          app.kubernetes.io/name: {{ include "bggdbchart.name" . }}
+          app.kubernetes.io/instance: {{ .Release.Name }}
+      spec:
+         volumes:
+            - name: dbvol
+              persistentVolumeClaim:
+                 claimName: {{ .Values.claimname }}
+         initContainers:
+            - name: mydb-vol-scrub
+              image: busybox
+              command: ["/bin/sh", "-c", "test -e /scrub && rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  && test -z \"$(ls -A /scrub)\" || exit 1"]
+              volumeMounts:
+              - name: dbvol
+                mountPath: /scrub
+         containers:
+            - name: {{ .Chart.Name }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              ports:
+              - name: mysql-port
+                containerPort: {{ .Values.mysqlport }}
+              volumeMounts:
+                - mountPath: /var/lib/mysql
+                  name: dbvol

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "bggchartv2.fullname" . }}-test-connection"
+  labels:
+{{ include "bggchartv2.labels" . | indent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['{{ include "bggchartv2.fullname" . }}:{{ .Values.bggv1.service.port }}']
+  restartPolicy: Never

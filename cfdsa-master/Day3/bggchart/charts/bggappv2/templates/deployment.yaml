@@ -1,0 +1,41 @@
+---
+# Deployment for bgg app:v2
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+   name: {{ include "bggappv2.fullname" . }}
+   namespace: {{ .Release.Namespace }}
+
+spec:
+   replicas: {{ .Values.replicaCount }}
+   selector:
+      matchLabels:
+        app.kubernetes.io/name: {{ include "bggappv2.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: "v2"
+
+   template:
+      metadata:
+         name: {{ include "bggappv2.name" . }}
+         labels:
+           app.kubernetes.io/name: {{ include "bggappv2.name" . }}
+           app.kubernetes.io/instance: {{ .Release.Name }}
+           app.kubernetes.io/version: "v2"
+
+      spec:
+         containers:
+         - name: {{ .Chart.Name }}
+           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+           imagePullPolicy: {{ .Values.image.pullPolicy }}
+           resources:
+             requests:
+               cpu: {{ .Values.resources.requests.cpu}}
+           env:
+           - name: APP_PORT
+             value: {{ .Values.appPort | quote }}
+           - name: BGG_DB_HOST
+             value: {{ .Values.dbHost | quote }}
+           ports:
+           - name: bgg-app-port
+             containerPort: {{ .Values.appPort }}

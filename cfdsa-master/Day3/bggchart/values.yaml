@@ -1,0 +1,74 @@
+# DB Subchart
+bggdbchart:
+  mysqlport: 3306
+  storageprovisioner: dobs.csi.digitalocean.com
+  accessmodes: ReadWriteOnce
+  storagesize: 2Gi
+  storageclass: do-block-storage
+  dbreplicacount: 1
+
+bggappv1:
+  dbHost: bgg-bgg-db-container.workshop03.svc.cluster.local
+
+bggappv2:
+  dbHost: bgg-bgg-db-container.workshop03.svc.cluster.local
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: stable
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/ssl-redirect: “false”
+  hosts: []
+  #  - host: chart-example.local
+  
+  paths:
+  - path: /v1
+    backend:
+      serviceName: bgg-app-svc-v1
+      servicePort: 80
+  - path: /v2
+    backend:
+      serviceName: bgg-app-svc-v2
+      servicePort: 8080
+  - path: /
+    backend:
+      serviceName: bgg-app-svc-v2
+      servicePort: 8080
+
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

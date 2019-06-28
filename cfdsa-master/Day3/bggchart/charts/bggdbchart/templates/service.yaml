@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: {{ include "bggdbchart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "bggdbchart.labels" . | indent 4 }}
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "bggdbchart.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+  - name: mysql-port-svc
+    port: {{ .Values.service.port }}
+    targetPort: mysql-port

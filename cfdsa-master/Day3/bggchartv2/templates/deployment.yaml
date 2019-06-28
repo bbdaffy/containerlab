@@ -1,0 +1,147 @@
+---
+# Persistent Storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+   name: {{ .Values.database.claimname }}
+   namespace: {{ .Release.Namespace }}
+   annotations: 
+      volume.beta.kubernetes.io/storage-provisioner: {{ .Values.database.storageprovisioner | quote }}
+spec:
+  accessModes:
+    - {{ .Values.database.accessmodes }}
+  resources:
+    requests:
+      storage: {{ .Values.database.storagesize }}
+  storageClassName: {{ .Values.database.storageclass }}
+
+---
+# Deployment for database
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+   name: {{ .Values.database.name }}
+   namespace: {{ .Release.Namespace }}
+
+spec:
+   replicas: {{ .Values.database.replicaCount }}
+   selector:
+      matchLabels:
+        app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: "v1"
+   template:
+      metadata:
+        name: {{ .Values.database.name }}
+        labels:
+          app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+          app.kubernetes.io/instance: {{ .Release.Name }}
+          app.kubernetes.io/version: "v1"
+      spec:
+         volumes:
+            - name: dbvol
+              persistentVolumeClaim:
+                 claimName: {{ .Values.database.claimname }}
+         initContainers:
+            - name: mydb-vol-scrub
+              image: busybox
+              command: ["/bin/sh", "-c", "test -e /scrub && rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  && test -z \"$(ls -A /scrub)\" || exit 1"]
+              volumeMounts:
+              - name: dbvol
+                mountPath: /scrub
+         containers:
+            - name: {{ .Values.database.name }}
+              image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+              imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+              ports:
+              - name: mysql-port
+                containerPort: {{ .Values.database.mysqlport }}
+              volumeMounts:
+                - mountPath: /var/lib/mysql
+                  name: dbvol
+
+---
+# Deployment for bgg app:v1
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+   name: {{ .Values.bggv1.name }}
+   namespace: {{ .Release.Namespace }}
+
+spec:
+   replicas: {{ .Values.bggv1.replicaCount }}
+   selector:
+      matchLabels:
+        app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: "v1"
+
+   template:
+      metadata:
+         name: {{ include "bggchartv2.name" . }}
+         labels:
+           app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+           app.kubernetes.io/instance: {{ .Release.Name }}
+           app.kubernetes.io/version: "v1"
+
+      spec:
+         containers:
+         - name: {{ .Values.bggv1.name }}
+           image: "{{ .Values.bggv1.image.repository }}:{{ .Values.bggv1.image.tag }}"
+           imagePullPolicy: {{ .Values.bggv1.image.pullPolicy }}
+           resources:
+             requests:
+               cpu: {{ .Values.bggv1.resources.requests.cpu}}
+           env:
+           - name: APP_PORT
+             value: {{ .Values.bggv1.appPort | quote }}
+           - name: BGG_DB_HOST
+             value: {{ .Values.bggv1.dbHost | quote }}
+           ports:
+           - name: bgg-app-port
+             containerPort: {{ .Values.bggv1.appPort }}
+
+---
+# Deployment for bgg app:v2
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+   name: {{ .Values.bggv2.name }}
+   namespace: {{ .Release.Namespace }}
+
+spec:
+   replicas: {{ .Values.bggv2.replicaCount }}
+   selector:
+      matchLabels:
+        app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: "v1"
+
+   template:
+      metadata:
+         name: {{ .Values.bggv2.name }}
+         labels:
+           app.kubernetes.io/name: {{ include "bggchartv2.name" . }}
+           app.kubernetes.io/instance: {{ .Release.Name }}
+           app.kubernetes.io/version: "v1"
+
+      spec:
+         containers:
+         - name: {{ .Values.bggv2.name }}
+           image: "{{ .Values.bggv2.image.repository }}:{{ .Values.bggv2.image.tag }}"
+           imagePullPolicy: {{ .Values.bggv2.image.pullPolicy }}
+           resources:
+             requests:
+               cpu: {{ .Values.bggv2.resources.requests.cpu}}
+           env:
+           - name: APP_PORT
+             value: {{ .Values.bggv2.appPort | quote }}
+           - name: BGG_DB_HOST
+             value: {{ .Values.bggv2.dbHost | quote }}
+           ports:
+           - name: bgg-app-port
+             containerPort: {{ .Values.bggv2.appPort }}

@@ -14,7 +14,7 @@ spec:
 
    template:
       metadata:
-         name: bgg-db-pod
+         name: bgg-app-pod
          labels:
             app.kubernetes.io/name: bgg-app-pod
             app.kubernetes.io/version: "v1"

@@ -1,0 +1,23 @@
+replicaCount: 1
+
+mysqlport: 3306
+
+# For PVC
+claimname: dbpvc
+storageprovisioner: dobs.csi.digitalocean.com
+accessmodes: ReadWriteOnce
+storagesize: 2Gi
+storageclass: do-block-storage
+
+image:
+  repository: stackupiss/bgg-db
+  tag: v1
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 3306

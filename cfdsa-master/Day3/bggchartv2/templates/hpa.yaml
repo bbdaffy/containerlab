@@ -1,0 +1,16 @@
+apiVersion: autoscaling/v1
+
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: bggappv1hpa
+  namespace: {{ .Release.Namespace }}
+
+spec:
+  minReplicas: 2
+  maxReplicas: 7
+  targetCPUUtilizationPercentage: 1
+  scaleTargetRef:
+    kind: Deployment
+    name: {{ .Values.bggv2.name }}
+    apiVersion: apps/v1
